@@ -11,6 +11,8 @@
     <OutputPath>.</OutputPath>
     <Name>BillyPython</Name>
     <RootNamespace>BillyPython</RootNamespace>
+    <InterpreterId>Global|PythonCore|3.6</InterpreterId>
+    <PublishUrl>\\192.168.2.123\billy</PublishUrl>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -22,6 +24,14 @@
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="BillyPython.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <InterpreterReference Include="Global|PythonCore|3.6" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="billy.ini">
+      <Publish>True</Publish>
+    </Content>
   </ItemGroup>
   <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
   <!-- Uncomment the CoreCompile target to enable the Build command in
