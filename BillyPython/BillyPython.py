@@ -3,6 +3,7 @@ import fmrest
 from fmrest.exceptions import FileMakerError
 import time
 from datetime import datetime
+from datetime import timedelta
 import atexit
 import os
 from Adafruit_MotorHAT import Adafruit_MotorHAT, Adafruit_DCMotor
@@ -76,6 +77,12 @@ except Exception:
     exit()
 # print(token)
 
+
+# list of visemes for vowels
+vowels_mid = ['@', 'o', 'e' ]
+vowels_open = ['a', 'O', 'E' ]
+vowels_close = ['i', 'u']
+
 # hook into the motor hat and configure the two motors
 mh = Adafruit_MotorHAT(addr=0x60,freq=70)
 mouth = mh.getMotor(MOTOR_MOUTH)
@@ -97,6 +104,7 @@ try:
 except FileMakerError:
     if fms.last_error == 401:
         print(str( datetime.now()) + ' - Nothing found for now...')
+        print(str( datetime.now()) + ' ----------------------------------------------------------------------')
         # break and continue the loop
         exit()
     else:
@@ -117,7 +125,9 @@ dl.start()
 
 # turn billy's head here
 print(str( datetime.now()) +' - Turning the head...')
-mouth_process = Process(target=head_tilt, args=(5,))
+duration_from_fm = todo.duration
+print(duration_from_fm)
+mouth_process = Process(target=head_tilt, args=(durduration_from_fm,))
 mouth_process.start()
 
 #for x in range(0,4):
@@ -134,8 +144,9 @@ viseme_list = todo.audio_extra_info
 # percentage perhaps?  so that we can set the frequency? speed?
 
 
-# create empty dict
-dict = {}
+# create empty list
+action_list = []
+action_found = False
 for line in viseme_list.splitlines():
     print(str( datetime.now()) + ' ' + line)
     json_line = json.loads(line)
@@ -143,11 +154,32 @@ for line in viseme_list.splitlines():
     when = json_line['time']
     what = json_line['type']
     vis = json_line['value']
+
+    # we are only going to look at vowels for now
+    # but need to record when the next one kicks in so that we have a duration
+
+    if action_found == True:
+        when_end = when
+        # add the action tuple to the list
+        action_list.append((action, when_start, when_end))
+
+    action_found = False
     if vis == 'sil':
-        dict[ str(when)] = 'close'
-    # value = sil for silent, time to release motor
-    # store in what variable for reading during playback?
-    # also need to figure out how to calculate elapsed since playback start
+        action = 'close'
+        action_found = True
+    elif vis in vowels_close:
+         action = 'close'
+         action_found = True
+    elif vis in vowels_open:
+        action = 'open'
+        action_found = True
+    elif vis in vowels_mid:
+        action = 'half'
+        action_found = True
+
+    if action_found == True:
+        when_start = when
+print(str( datetime.now()) + ' - Done parsing the visemes')
 
 # make sure we wait for the download to finish
 dl.join()
@@ -156,17 +188,35 @@ print(str( datetime.now()) + ' - Done downloading the mp3')
 # now play the audio and do the magic
 voice = Process(target=play_voice)
 print(str( datetime.now()) + ' - Start the playback')
+start_time = datetime.now()
 voice.start()
 
+print(str( datetime.now()) + ' - Start the motor action')
 # move the mouth in sync with the speech
-for x in range(0,4):
-    print(str( datetime.now()) + ' - Message during playback')
-    # move the mouth
-    # mouth.run(Adafruit_MotorHAT.BACKWARD)
-    time.sleep(1)
-    # mouth.run(Adafruit_MotorHAT.RELEASE)
-    # time.sleep(1)
+for action_tuple in action_list:
+    print(str( datetime.now()) + ' - action: ' + action_tuple)
+    when_start, when_end, action = action_tuple
+    elapsed_time = when_end - when_start
+    if datetime.now > start_time + timedelta(milliseconds=when_start):
+        finished = False
+        while not finished:
+            if action == 'close':
+                # release the motor
+                mouth.run(Adafruit_MotorHAT.RELEASE)
+            elif action == 'half':
+                # send half power
+                mouth.setSpeed(50)
+                mouth.run(Adafruit_MotorHAT.BACKWARD)
+                time.sleep(when_start/1000)
+                mouth.run(Adafruit_MotorHAT.RELEASE)
+            elif action == 'open':
+                # send full power
+                mouth.setSpeed(100)
+                mouth.run(Adafruit_MotorHAT.BACKWARD)
+                time.sleep(when_start/1000)
+                mouth.run(Adafruit_MotorHAT.RELEASE)
 
+print(str( datetime.now()) + ' - Done with the motor action')
 
 
 # now update the FM record to mark that it is done
@@ -175,3 +225,4 @@ todo['flag_ready'] = ''
 todo['notes'] = 'Done - ' + str( datetime.now()) + '\n' + old_notes
 fms.edit(todo)
 print(str( datetime.now()) + ' - FM record updated')
+print(str( datetime.now()) + ' ----------------------------------------------------------------------')
