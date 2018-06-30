@@ -51,6 +51,16 @@ def waggle_tail():
         time.sleep(5)
         head.run(Adafruit_MotorHAT.RELEASE)
 
+def mouth_open(how_many_seconds, how_wide):
+    while True:
+        if how_wide == 'full':
+            speed = 100
+        elif how_wide == 'half':
+            speed = 50
+        mouth.setSpeed(speed)
+        mouth.run(Adafruit_MotorHAT.BACKWARD)
+        time.sleep(how_many_seconds/1000)
+        mouth.run(Adafruit_MotorHAT.RELEASE)
 
 def play_voice():
     player = OMXPlayer('play.mp3')
@@ -171,7 +181,7 @@ for line in viseme_list.splitlines():
          action = 'close'
          action_found = True
     elif vis in vowels_open:
-        action = 'open'
+        action = 'full'
         action_found = True
     elif vis in vowels_mid:
         action = 'half'
@@ -197,6 +207,7 @@ for action_tuple in action_list:
     print(str( datetime.now()) + ' - action: ' + action_tuple)
     when_start, when_end, action = action_tuple
     elapsed_time = when_end - when_start
+    duration_in_seconds = elapsed_time / 1000
     if datetime.now > start_time + timedelta(milliseconds=when_start):
         finished = False
         while not finished:
@@ -205,16 +216,10 @@ for action_tuple in action_list:
                 mouth.run(Adafruit_MotorHAT.RELEASE)
             elif action == 'half':
                 # send half power
-                mouth.setSpeed(50)
-                mouth.run(Adafruit_MotorHAT.BACKWARD)
-                time.sleep(when_start/1000)
-                mouth.run(Adafruit_MotorHAT.RELEASE)
-            elif action == 'open':
+                mouth_open(duration_in_seconds, action)
+            elif action == 'full':
                 # send full power
-                mouth.setSpeed(100)
-                mouth.run(Adafruit_MotorHAT.BACKWARD)
-                time.sleep(when_start/1000)
-                mouth.run(Adafruit_MotorHAT.RELEASE)
+                mouth_open(duration_in_seconds, action)
 
 print(str( datetime.now()) + ' - Done with the motor action')
 
