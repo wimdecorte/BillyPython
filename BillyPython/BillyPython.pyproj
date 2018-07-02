@@ -23,6 +23,12 @@
     <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
   <ItemGroup>
+    <Compile Include="BillyBodyTest.py">
+      <SubType>Code</SubType>
+    </Compile>
+    <Compile Include="BillyMouthTest.py">
+      <SubType>Code</SubType>
+    </Compile>
     <Compile Include="BillyPython.py" />
   </ItemGroup>
   <ItemGroup>
