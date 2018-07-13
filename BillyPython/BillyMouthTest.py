@@ -19,15 +19,17 @@ def turnOffMotors():
 atexit.register(turnOffMotors)
 
 # for billy bones: keep it low enough that the mouth doesn't 'clatter' when closing
-speed = 37
+speed = 100
 
-# max frequency = 1600
-frequency = 200
+# max frequency = 1600 Hz max, 40 Hz min
+frequency = 100
 
 mh = Adafruit_MotorHAT(addr=0x60,freq=frequency)
 mouth = mh.getMotor(MOTOR_MOUTH)
 mouth.setSpeed(speed)
 
-mouth.run(Adafruit_MotorHAT.BACKWARD)
-time.sleep(.07)
-mouth.run(Adafruit_MotorHAT.RELEASE)
+for x in range(0,4):
+    mouth.run(Adafruit_MotorHAT.BACKWARD)
+    time.sleep(.4)
+    mouth.run(Adafruit_MotorHAT.RELEASE)
+    time.sleep(1)

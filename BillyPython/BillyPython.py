@@ -35,16 +35,17 @@ atexit.register(turnOffMotors)
 # function to tilt head up when the fish talks
 def head_tilt(how_many_seconds):
     print(str( datetime.now()) + ' - sub-process head movement for ' + str(how_many_seconds))
+    head.setSpeed(fish_head_speed)
     head.run(Adafruit_MotorHAT.BACKWARD)
     # set to forward to move the tail
     time.sleep(int(how_many_seconds))
     head.run(Adafruit_MotorHAT.RELEASE)
-    waggle_tail()
+    if fish_waggle_tail == True:
+        waggle_tail()
     print(str( datetime.now()) + ' - sub-process head movement done')
 
 # function to waggle the tail
 def waggle_tail():
-    head.setSpeed(80)
      # set to forward to move the tail
     for x in range(3):
         print(str( datetime.now()) + ' - sub-process tail iteration ' + str(x))
@@ -56,9 +57,9 @@ def waggle_tail():
 def mouth_open(how_many_seconds, how_wide):
     print(str( datetime.now()) + ' - sub-process mouth movement for ' + str(how_many_seconds) + ' seconds')
     if how_wide == 'full':
-        speed = 300
+        speed = fish_mouth_speed
     elif how_wide == 'half':
-        speed = 150
+        speed = fish_mouth_speed / 2
     mouth.setSpeed(speed)
     mouth.run(Adafruit_MotorHAT.BACKWARD)
     time.sleep(float(how_many_seconds)/1000.0)
@@ -92,6 +93,13 @@ except Exception:
     exit()
 # print(token)
 
+# get the fish config settings
+fish = Config['BILLY']
+fish_frequency = fish.getint('frequency')
+fish_head_speed = fish.getint('head_speed')
+fish_mouth_speed = fish.getint('mouth_speed')
+fish_waggle_tail = fish.getboolean('waggle_the_tail')
+print(str( datetime.now()) + ' - Fish config settings: ' + str(fish_frequency) + '/' + str(fish_head_speed) + '/' + str(fish_mouth_speed) + '/' + str(fish_waggle_tail))
 
 # list of visemes for vowels
 vowels_mid = ['@', 'o', 'e' ]
@@ -102,9 +110,9 @@ consonants = ['p', 't', 'S', 'f', 'k', 'r']
 # hook into the motor hat and configure the two motors
 mh = Adafruit_MotorHAT(addr=0x60,freq=70)
 mouth = mh.getMotor(MOTOR_MOUTH)
-mouth.setSpeed(100)
+mouth.setSpeed(fish_mouth_speed)
 head =  mh.getMotor(MOTOR_HEAD_TAIL)
-head.setSpeed(150)
+head.setSpeed(fish_head_speed)
 
 # while True:
 print(str( datetime.now()) + ' - Starting the loop...')
