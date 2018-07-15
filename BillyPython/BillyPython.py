@@ -78,22 +78,25 @@ def play_voice():
     time.sleep(player.duration() + 1)
 
 def play_voice_in_sync():
-    p = pyaudio.PyAudio()
-    stream = p.open(
-            format=p.get_format_from_width(2),
-            channels=1,
-            rate=16000,
-            output=True)
+    player = OMXPlayer('play.' + audio_type)
+    #player.set_volume(100)
+    # p = pyaudio.PyAudio()
+    #stream = p.open(
+    #        format=p.get_format_from_width(2),
+    #        channels=1,
+    #        rate=16000,
+    #        output=True)
     th = threading.Thread(target=handle_viseme, args=(viseme_data,))
     th.start()
-    with open('play.WAV', 'rb') as pcm_file:
-        data = pcm_file.read(1024)
-        while data != '':
-            stream.write(data)
-            data = pcm_file.read(1024)
+    # time.sleep(player.duration() + 1)
+    #with open('play.WAV', 'rb') as pcm_file:
+    #    data = pcm_file.read(1024)
+    #    while data != '':
+    #        stream.write(data)
+    #        data = pcm_file.read(1024)
     th.join()
-    stream.stop_stream()
-    stream.close()
+    #stream.stop_stream()
+    #stream.close()
 
 def handle_viseme(args):
     viseme_data = args
@@ -106,7 +109,7 @@ def handle_viseme(args):
         speed = fish_mouth_speed
         mouth.setSpeed(speed)
         mouth.run(Adafruit_MotorHAT.BACKWARD)
-        time.sleep(0.2)
+        time.sleep(fish_mouth_duration)
         mouth.run(Adafruit_MotorHAT.RELEASE)
         index = index + 1
         if index >= len(viseme_data):
@@ -144,6 +147,7 @@ fish_mouth_speed = fish.getint('mouth_speed')
 fish_waggle_tail = fish.getboolean('waggle_the_tail')
 fish_move_head = fish.getboolean('move_the_head')
 fish_mouth_wait = fish.getint('offset')
+fish_mouth_duration = fish.getint('mouth_duration') / 1000.0
 print(str( datetime.now()) + ' - Fish config settings: ' + str(fish_frequency) + '/' + str(fish_head_speed) + '/' + str(fish_mouth_speed) + '/' + str(fish_waggle_tail) + '/' + str(fish_move_head))
 
 # list of visemes for vowels
@@ -221,7 +225,7 @@ print(str( datetime.now()) + ' - Record found...')
 todo = foundset[0]
 old_notes = todo.notes
 audio_type = todo.audio_type
-print(str( datetime.now()) +' - audio file is at ' + todo.audio_file)
+print(str( datetime.now()) +' - audio file (' + audio_type + ') is at ' + todo.audio_file)
 
 # prep the download process for the mp3
 name, type_, length, response = fms.fetch_file(todo.audio_file, stream=True)
@@ -263,7 +267,7 @@ for line in viseme_list.splitlines():
     what = json_line['type']
     vis = json_line['value']
 
-    if vis in VOWELS:
+    if vis in vowels_open:
         viseme_data.append([vis, when])
 
     # we are only going to look at vowels for now
@@ -302,50 +306,57 @@ print(str( datetime.now()) + ' - Done downloading the ' + audio_type)
 # now play the audio and do the magic
 if audio_type == 'MP3':
     voice = Process(target=play_voice)
+    th = threading.Thread(target=handle_viseme, args=(viseme_data,))
     print(str( datetime.now()) + ' - Start the mp3 playback')
-    start_time = datetime.now() + timedelta(milliseconds=fish_mouth_wait)
-    print(str( datetime.now()) + ' - Start marker time = ' + str(start_time))
+    #start_time = datetime.now() + timedelta(milliseconds=fish_mouth_wait)
+    #print(str( datetime.now()) + ' - Start marker time = ' + str(start_time))
     voice.start()
-
     print(str( datetime.now()) + ' - Delaying the motor action by ' + str(fish_mouth_wait) + ' milliseconds')
     time.sleep(fish_mouth_wait / 1000.0)
+    th.start()
 
-    print(str( datetime.now()) + ' - Start the motor action')
-    # move the mouth in sync with the speech
-    for action_tuple in action_list:
-        print(str( datetime.now()) + ' - action: ' + str(action_tuple))
+    th.join()
+    voice.join()
+
+    if False:
+
+
+        print(str( datetime.now()) + ' - Start the motor action')
+        # move the mouth in sync with the speech
+        for action_tuple in action_list:
+            print(str( datetime.now()) + ' - action: ' + str(action_tuple))
     
-        # break down the tuple
-        action, when_start, when_end = action_tuple
+            # break down the tuple
+            action, when_start, when_end = action_tuple
 
-        # how long does this action take?
-        elapsed_time = int(when_end) - int(when_start)
-        action_time = start_time + timedelta(milliseconds=int(when_start))
-        # print(str( datetime.now()) + ' - action length: ' + str(elapsed_time) + ' milliseconds, start target = ' + str(action_time))
-        duration_in_seconds = float(elapsed_time) / 1000.0
+            # how long does this action take?
+            elapsed_time = int(when_end) - int(when_start)
+            action_time = start_time + timedelta(milliseconds=int(when_start))
+            # print(str( datetime.now()) + ' - action length: ' + str(elapsed_time) + ' milliseconds, start target = ' + str(action_time))
+            duration_in_seconds = float(elapsed_time) / 1000.0
 
-        # loop and wait until it is our turn
-        sleep_time = 2.0 / 1000.0  # to make it seconds
+            # loop and wait until it is our turn
+            sleep_time = 2.0 / 1000.0  # to make it seconds
     
-        # print(str( datetime.now()) + ' - waiting for: ' + str(action_time))
-        while  datetime.now() < action_time:
-            # sleep until the time comes for this action
-            time.sleep(sleep_time)
-        # the time has come, we can now process the action
-        # print(str( datetime.now()) + ' - the time has come for the action')
-        if action == 'close':
-            # release the motor
-            # print(str( datetime.now()) + ' - closing mouth')
-            mouth.run(Adafruit_MotorHAT.RELEASE)
-            # break
-        elif action == 'half':
-            # send half power
-            mouth_open(duration_in_seconds, action)
-            # break
-        elif action == 'full':
-            # send full power
-            mouth_open(duration_in_seconds, action)
-            # break
+            # print(str( datetime.now()) + ' - waiting for: ' + str(action_time))
+            while  datetime.now() < action_time:
+                # sleep until the time comes for this action
+                time.sleep(sleep_time)
+            # the time has come, we can now process the action
+            # print(str( datetime.now()) + ' - the time has come for the action')
+            if action == 'close':
+                # release the motor
+                # print(str( datetime.now()) + ' - closing mouth')
+                mouth.run(Adafruit_MotorHAT.RELEASE)
+                # break
+            elif action == 'half':
+                # send half power
+                mouth_open(duration_in_seconds, action)
+                # break
+            elif action == 'full':
+                # send full power
+                mouth_open(duration_in_seconds, action)
+                # break
 elif audio_type == 'WAV':
     print(str( datetime.now()) + ' - Start the wav playback')
     play_voice_in_sync()
