@@ -26,11 +26,11 @@ atexit.register(turnOffMotors)
 # bread orange to hat brown (motor 1, right)
 # bread black to hat black (motor 1, left)
 
-speed = 175
+speed = 125
 
 # max frequency = 1600 Hz, min = 24 Hz
 # same frequency applies to all channels
-frequency = 100
+frequency = 90
 
 mh = Adafruit_MotorHAT(addr=0x60,freq=frequency)
 body = mh.getMotor(MOTOR_BODY)

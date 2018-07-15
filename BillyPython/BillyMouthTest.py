@@ -22,7 +22,7 @@ atexit.register(turnOffMotors)
 speed = 100
 
 # max frequency = 1600 Hz max, 40 Hz min
-frequency = 100
+frequency = 90
 
 mh = Adafruit_MotorHAT(addr=0x60,freq=frequency)
 mouth = mh.getMotor(MOTOR_MOUTH)
