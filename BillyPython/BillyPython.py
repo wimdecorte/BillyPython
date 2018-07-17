@@ -83,14 +83,12 @@ def handle_viseme(args):
         time.sleep((viseme_data[index][1] - viseme_data[index-1][1]) / 1000.0)
 
 
-def get_file(response):
+def get_file():
     print(str( datetime.now()) + ' - sub-process download started.')
-    name, type_, length, response = fms.fetch_file(todo.audio_file, stream=True)
+    name, type_, length, response = fms.fetch_file(todo.audio_file)
     print(str( datetime.now()) +' - fetched audio file details.')
     with open('play.' + audio_type, 'wb') as file_:
-        for chunk in response.iter_content(chunk_size=2048): 
-            if chunk:
-                file_.write(chunk)
+        file_.write(response.content)
     print(str( datetime.now()) + ' - sub-process download done.')
 
 # make the connection to the FMS Data API
@@ -120,7 +118,7 @@ print(str( datetime.now()) + ' - Fish config settings: ' + str(fish_frequency) +
 
 # get the app config settings
 app_settings = Config['APP']
-app_testing_mode = app_settings.getboolan('testing')
+app_testing_mode = app_settings.getboolean('testing')
 app_polling_interval = app_settings.getint('polling_interval')
 app_polling_interval_testing = app_settings.getint('polling_interval_testing')
 
@@ -153,6 +151,7 @@ while True:
     find_request = [{'flag_turn_head': '1'}]
     try:
         foundset = fms.find(query=find_request)
+        print(str( datetime.now()) + ' - FMS error = ' + str(fms.last_error))
     except FileMakerError:
         if fms.last_error == 0:
              if foundset is not None:
@@ -171,7 +170,7 @@ while True:
                 fish_move_head = temp_boolean
                 print(str( datetime.now()) + ' ----------------------------------------------------------------------')
                 # break and continue the loop, we're not going to play any audio
-                break
+                continue
         if fms.last_error == 401:
             # no problem, we're going to look for audio to play
             print(str( datetime.now()) + ' - No head turning action requested...')
@@ -188,7 +187,7 @@ while True:
             print(str( datetime.now()) + ' - No speech playback requests found...')
             print(str( datetime.now()) + ' ----------------------------------------------------------------------')
             # break and continue the loop
-            break
+            continue
         else:
             print(str( datetime.now()) +' - Unexpected FMS error: ' + fms.last_error)
             exit()
@@ -201,7 +200,7 @@ while True:
     print(str( datetime.now()) +' - audio file (' + audio_type + ') is at ' + todo.audio_file)
 
     # prep the download process for the mp3
-    dl = Process(target=get_file, args=(response,))
+    dl = Process(target=get_file)
 
     # turn billy's head here
     hhmmss =  todo.duration
@@ -270,7 +269,7 @@ while True:
     print(str( datetime.now()) + ' ----------------------------------------------------------------------')
 
     # wait for a little bit before repeating the loop
-    if aapp_testing_mode == True:
+    if app_testing_mode == True:
         time.sleep(app_polling_interval_testing / 1000.0)
     else:
         time.sleep(app_polling_interval / 1000.0)
