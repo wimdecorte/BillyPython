@@ -91,6 +91,13 @@ def get_file():
         file_.write(response.content)
     print(str( datetime.now()) + ' - sub-process download done.')
 
+def determine_pause():
+    # wait for a little bit before repeating the loop
+    if app_testing_mode == True:
+        time.sleep(app_polling_interval_testing / 1000.0)
+    else:
+        time.sleep(app_polling_interval / 1000.0)
+
 # make the connection to the FMS Data API
 fms = fmrest.Server(Config.get('FMS', 'url'),
                         user=Config.get('FMS', 'user'),
@@ -121,6 +128,7 @@ app_settings = Config['APP']
 app_testing_mode = app_settings.getboolean('testing')
 app_polling_interval = app_settings.getint('polling_interval')
 app_polling_interval_testing = app_settings.getint('polling_interval_testing')
+print(str( datetime.now()) + ' - App config settings: ' + str(app_testing_mode) + '/' + str(app_polling_interval) + '/' + str(app_polling_interval_testing))
 
 
 # list of visemes for vowels
@@ -148,35 +156,38 @@ while True:
 
     # first try to find if we have a request to just turn the head
     foundset = None
+    find_request = None
     find_request = [{'flag_turn_head': '1'}]
     try:
         foundset = fms.find(query=find_request)
-        print(str( datetime.now()) + ' - FMS error = ' + str(fms.last_error))
+        # print(str( datetime.now()) + ' - FMS error = ' + str(fms.last_error))
     except FileMakerError:
-        if fms.last_error == 0:
-             if foundset is not None:
-                todo = foundset[0]
-                # override whatever was set in the config file for head movement
-                temp_boolean = fish_move_head
-                fish_move_head = True
-                print(str( datetime.now()) + ' - Head turning action requested...')
-                head_process = Process(target=head_tilt, args=(1,))
-                print(str( datetime.now()) +' - Turning the head...')
-                head_process.start()
-                print(str( datetime.now()) + ' - Updating the FM record')
-                todo['flag_turn_head'] = ''
-                fms.edit(todo)
-                # reset the configured head movement
-                fish_move_head = temp_boolean
-                print(str( datetime.now()) + ' ----------------------------------------------------------------------')
-                # break and continue the loop, we're not going to play any audio
-                continue
         if fms.last_error == 401:
             # no problem, we're going to look for audio to play
             print(str( datetime.now()) + ' - No head turning action requested...')
         else:
             print(str( datetime.now()) +' - Unexpected FMS error: ' + fms.last_error)
             exit()
+    else:
+        # no error so we found a head-move request
+        if foundset is not None:
+            todo = foundset[0]
+            # override whatever was set in the config file for head movement
+            temp_boolean = fish_move_head
+            fish_move_head = True
+            print(str( datetime.now()) + ' - Head turning action requested...')
+            head_process = Process(target=head_tilt, args=(1,))
+            print(str( datetime.now()) +' - Turning the head...')
+            head_process.start()
+            print(str( datetime.now()) + ' - Updating the FM record')
+            todo['flag_turn_head'] = ''
+            fms.edit(todo)
+            # reset the configured head movement
+            fish_move_head = temp_boolean
+            print(str( datetime.now()) + ' ----------------------------------------------------------------------')
+            # continue the loop, we're not going to play any audio
+            determine_pause()
+            continue
 
     # find the todo records
     find_request = [{'flag_ready': '1'}]
@@ -186,7 +197,8 @@ while True:
         if fms.last_error == 401:
             print(str( datetime.now()) + ' - No speech playback requests found...')
             print(str( datetime.now()) + ' ----------------------------------------------------------------------')
-            # break and continue the loop
+            # continue the loop
+            determine_pause()
             continue
         else:
             print(str( datetime.now()) +' - Unexpected FMS error: ' + fms.last_error)
@@ -267,9 +279,7 @@ while True:
     print(str( datetime.now()) + ' - FM record updated')
     head_process.join()
     print(str( datetime.now()) + ' ----------------------------------------------------------------------')
+    # pause for a bit
+    determine_pause()
 
-    # wait for a little bit before repeating the loop
-    if app_testing_mode == True:
-        time.sleep(app_polling_interval_testing / 1000.0)
-    else:
-        time.sleep(app_polling_interval / 1000.0)
+
