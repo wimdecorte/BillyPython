@@ -118,6 +118,13 @@ fish_mouth_wait = fish.getint('offset')
 fish_mouth_duration = fish.getint('mouth_duration') / 1000.0
 print(str( datetime.now()) + ' - Fish config settings: ' + str(fish_frequency) + '/' + str(fish_head_speed) + '/' + str(fish_mouth_speed) + '/' + str(fish_waggle_tail) + '/' + str(fish_move_head))
 
+# get the app config settings
+app_settings = Config['APP']
+app_testing_mode = app_settings.getboolan('testing')
+app_polling_interval = app_settings.getint('polling_interval')
+app_polling_interval_testing = app_settings.getint('polling_interval_testing')
+
+
 # list of visemes for vowels
 VOWELS = ['@', 'a', 'e', 'E', 'i', 'o', 'O', 'u']
 vowels_mid = ['@', 'o', 'e' ]
@@ -263,4 +270,7 @@ while True:
     print(str( datetime.now()) + ' ----------------------------------------------------------------------')
 
     # wait for a little bit before repeating the loop
-    time.sleep(0.1)
+    if aapp_testing_mode == True:
+        time.sleep(app_polling_interval_testing / 1000.0)
+    else:
+        time.sleep(app_polling_interval / 1000.0)
