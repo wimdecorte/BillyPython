@@ -112,8 +112,22 @@ except Exception:
     exit()
 # print(token)
 
+
+# get the app config settings
+app_settings = Config['APP']
+app_billy = app_settings['use']
+app_testing_mode = app_settings.getboolean('testing')
+app_polling_interval = app_settings.getint('polling_interval')
+app_polling_interval_testing = app_settings.getint('polling_interval_testing')
+print(str( datetime.now()) + ' - App config settings: '  + app_billy + '/' + str(app_testing_mode) + '/' + str(app_polling_interval) + '/' + str(app_polling_interval_testing))
+
+
+
 # get the fish config settings
-fish = Config['BILLY']
+if app_billy == 'billy1':
+    fish = Config['BILLY1']
+elif app_billy == 'billy2':
+    fish = Config['BILLY2']
 fish_frequency = fish.getint('frequency')
 fish_head_speed = fish.getint('head_speed')
 fish_mouth_speed = fish.getint('mouth_speed')
@@ -122,14 +136,6 @@ fish_move_head = fish.getboolean('move_the_head')
 fish_mouth_wait = fish.getint('offset')
 fish_mouth_duration = fish.getint('mouth_duration') / 1000.0
 print(str( datetime.now()) + ' - Fish config settings: ' + str(fish_frequency) + '/' + str(fish_head_speed) + '/' + str(fish_mouth_speed) + '/' + str(fish_waggle_tail) + '/' + str(fish_move_head))
-
-# get the app config settings
-app_settings = Config['APP']
-app_testing_mode = app_settings.getboolean('testing')
-app_polling_interval = app_settings.getint('polling_interval')
-app_polling_interval_testing = app_settings.getint('polling_interval_testing')
-print(str( datetime.now()) + ' - App config settings: ' + str(app_testing_mode) + '/' + str(app_polling_interval) + '/' + str(app_polling_interval_testing))
-
 
 # list of visemes for vowels
 VOWELS = ['@', 'a', 'e', 'E', 'i', 'o', 'O', 'u']
