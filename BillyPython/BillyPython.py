@@ -87,7 +87,7 @@ def handle_viseme(args):
 def get_file():
     print(str( datetime.now()) + ' - sub-process download started.')
     name, type_, length, response = fms.fetch_file(todo.audio_file)
-    print(str( datetime.now()) +' - fetched audio file details.')
+    print(str( datetime.now()) +' - fetched audio file details. name = ' + name + ', type = ' + str(type_) + ', length = ' + str(length) )
     with open('play.' + audio_type, 'wb') as file_:
         file_.write(response.content)
     print(str( datetime.now()) + ' - sub-process download done.')
