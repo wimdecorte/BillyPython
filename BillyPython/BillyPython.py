@@ -83,7 +83,6 @@ def handle_viseme(args):
             break
         time.sleep((viseme_data[index][1] - viseme_data[index-1][1]) / 1000.0)
 
-
 def get_file():
     print(str( datetime.now()) + ' - sub-process download started.')
     name, type_, length, response = fms.fetch_file(todo.audio_file)
@@ -111,7 +110,6 @@ except Exception:
     # quit right here, no point in continuiing
     print(str( datetime.now()) + ' - Could not log into FileMaker... Stopping.')
     exit()
-# print(token)
 
 
 """
@@ -163,13 +161,15 @@ fish_mouth_wait = fish.getint('offset')
 fish_mouth_duration = fish.getint('mouth_duration') / 1000.0
 print(str( datetime.now()) + ' - Fish config settings: ' + str(fish_frequency) + '/' + str(fish_head_speed) + '/' + str(fish_mouth_speed) + '/' + str(fish_waggle_tail) + '/' + str(fish_move_head))
 
+"""
 # list of visemes for vowels
 VOWELS = ['@', 'a', 'e', 'E', 'i', 'o', 'O', 'u']
-vowels_mid = ['@', 'o', 'e' ]
-vowels_open = ['a', 'O', 'E' ]
-vowels_close = ['i', 'u']
-consonants = []
+VOWELS_MID = ['@', 'o', 'e' ]
+VOWELS_OPEN = ['a', 'O', 'E' ]
+VOWELS_CLOSE = ['i', 'u']
+CONSONANTS = []
 # consonants = ['p', 't', 'S', 'f', 'k', 'r']
+"""
 
 # hook into the motor hat and configure the two motors
 mh = Adafruit_MotorHAT(addr=0x60,freq=fish_frequency)
