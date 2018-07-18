@@ -1,17 +1,18 @@
-import fmrest
-from fmrest.exceptions import FileMakerError
-import time
-from datetime import datetime
-from datetime import timedelta
 import atexit
-import os
-from Adafruit_MotorHAT import Adafruit_MotorHAT, Adafruit_DCMotor
 import configparser
-import multiprocessing
-from multiprocessing import Process
-from omxplayer.player import OMXPlayer
 import json
+import multiprocessing
+import os
+import subprocess
 import threading
+import time
+from datetime import datetime, timedelta
+from multiprocessing import Process
+
+import fmrest
+from Adafruit_MotorHAT import Adafruit_DCMotor, Adafruit_MotorHAT
+from fmrest.exceptions import FileMakerError
+from omxplayer.player import OMXPlayer
 
 MOTOR_HEAD_TAIL = 1
 MOTOR_MOUTH = 2
@@ -112,6 +113,31 @@ except Exception:
     exit()
 # print(token)
 
+
+"""
+This version will use pacat to interpret the audio as it plays, looking for peaks
+Unlike the other approach that uses the visemes and mouth positions
+
+Find PA_SOURCE with `pactl list` and look for a monitor device that corresponds
+to your output device.
+
+My Pi has only one that has monitor in its name:
+Source #0
+alsa_output.platform-soc_audio.analog-stereo.monitor
+
+-->> may need to change this when plugging in USB audio or using the separate amplifier!
+
+"""
+
+# set the pacat environment
+PA_SOURCE = "alsa_output.platform-soc_audio.analog-stereo.monitor"
+# We're not playing this stream back anywhere, so to avoid using too much CPU
+# time, use settings that are just high enough to detect when there is speech.
+PA_FORMAT = "u8" # 8 bits per sample
+PA_CHANNELS = 1 # Mono
+PA_RATE = 2000 # Hz
+PA_BUFFER = 32 # frames for a latency of 64 ms
+SAMPLE_THRESHOLD = 4
 
 # get the app config settings
 app_settings = Config['APP']
@@ -237,6 +263,7 @@ while True:
     print(str( datetime.now()) +' - Downloading the ' + audio_type + '...')
     dl.start()
 
+    """
     # while file is downloading, process the visemes
     # keep only those that move the mouth
     # start at each word should close the mouth
@@ -257,25 +284,44 @@ while True:
             viseme_data.append([vis, when])
 
     print(str( datetime.now()) + ' - Done parsing the visemes')
-
+    """
     # make sure we wait for the download to finish
     dl.join()
     print(str( datetime.now()) + ' - Done downloading the ' + audio_type)
 
     # now play the audio and do the magic
     voice = Process(target=play_voice)
-    th = threading.Thread(target=handle_viseme, args=(viseme_data,))
+    # th = threading.Thread(target=handle_viseme, args=(viseme_data,))
     print(str( datetime.now()) + ' - Start the mp3 playback')
     voice.start()
 
-    print(str( datetime.now()) + ' - Delaying the motor action by ' + str(fish_mouth_wait) + ' milliseconds')
-    time.sleep(fish_mouth_wait / 1000.0)
-    th.start()
+    # Capture audio using `pacat` -- PyAudio looked like a cleaner choice but
+    # doesn't support capturing monitor devices, so it can't be used to capture
+    # system output.
+    print(str( datetime.now()) + ' - Start the pacat recording')
+    parec = subprocess.Popen(["/usr/bin/pacat", "--record", "--device="+PA_SOURCE,
+        "--rate="+str(PA_RATE), "--channels="+str(PA_CHANNELS),
+        "--format="+PA_FORMAT, "--latency="+str(PA_BUFFER)], stdout=subprocess.PIPE)
 
-    th.join()
+    print(str( datetime.now()) + ' - Start the pacat evaluation')
+    while not parec.stdout.closed:
+        # Mono audio with 1 byte per sample makes parsing trivial
+        sample = ord(parec.stdout.read(1)) - 128
+        if abs(sample) > SAMPLE_THRESHOLD:
+            # move the mouth
+            mouth.run(Adafruit_MotorHAT.BACKWARD)
+            time.sleep(fish_mouth_duration)
+            mouth.run(Adafruit_MotorHAT.RELEASE)
+            # may need to keep it open until the sample is back below the threshold?
+
+    # print(str( datetime.now()) + ' - Delaying the motor action by ' + str(fish_mouth_wait) + ' milliseconds')
+    # time.sleep(fish_mouth_wait / 1000.0)
+    # th.start()
+
+    # th.join()
     voice.join()
 
-    print(str( datetime.now()) + ' - Done with the motor action')
+    print(str( datetime.now()) + ' - Done with the audio playback')
 
     # now update the FM record to mark that it is done
     print(str( datetime.now()) + ' - Updating the FM record')
@@ -287,5 +333,3 @@ while True:
     print(str( datetime.now()) + ' ----------------------------------------------------------------------')
     # pause for a bit
     determine_pause()
-
-
