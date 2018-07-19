@@ -148,9 +148,9 @@ print(str( datetime.now()) + ' - Fish config settings: ' + str(fish_frequency) +
 PA_SOURCE = app_audio_source
 # We're not playing this stream back anywhere, so to avoid using too much CPU
 # time, use settings that are just high enough to detect when there is speech.
-PA_FORMAT = "u8" # 8 bits per sample
-PA_CHANNELS = 1 # Mono
-PA_RATE = 2000 # Hz
+PA_FORMAT = "u8" # 8 bits per sample, Polly bitrate is 48 kb/s
+PA_CHANNELS = 1 # Mono, as per the Polly MP3
+PA_RATE = 22050 # Hz, same as the default Polly MP3 sample rate
 PA_BUFFER = 32 # frames for a latency of 64 ms
 
 # hook into the motor hat and configure the two motors
@@ -257,24 +257,56 @@ while True:
     # Capture audio output using `pacat` -- PyAudio looked like a cleaner choice but
     # doesn't support capturing monitor devices, so it can't be used to capture
     # system output.
+    command_args = [
+        "pacat",
+        "--record",
+        "--device=" + PA_SOURCE,
+        "--rate=" + str(PA_RATE),
+        "--channels=" + str(PA_CHANNELS),
+        "--format=" + PA_FORMAT,
+        "--latency=" + str(PA_BUFFER)
+        ]
     print(str( datetime.now()) + ' - Start the pacat recording')
-    parec = subprocess.Popen(["/usr/bin/pacat", "--record", "--device="+PA_SOURCE,
-        "--rate="+str(PA_RATE), "--channels="+str(PA_CHANNELS),
-        "--format="+PA_FORMAT, "--latency="+str(PA_BUFFER)], stdout=subprocess.PIPE)
+    parec = subprocess.Popen(
+        args = command_args,
+        shell = False,
+        stdout = subprocess.PIPE
+        )
 
     print(str( datetime.now()) + ' - Start the pacat evaluation')
+    # outs, errs = parec.communicate(timeout = (duration_from_fm + 1))
+    # outs is a bytes object
+    while True:
+        out = parec.stdout.read(1)
+        print(str( datetime.now()) + ' - raw audio = ' + str(out))
+        if out == b'' and parec.poll() is not None:
+            break
+        sample = ord(out) - 128
+        print(str( datetime.now()) + ' - Audio sample = ' + str(sample))
+    parec.kill()
+
+    #parec = subprocess.Popen(["/usr/bin/pacat", "--record", "--device="+PA_SOURCE,
+    #    "--rate="+str(PA_RATE), "--channels="+str(PA_CHANNELS),
+    #    "--format="+PA_FORMAT, "--latency="+str(PA_BUFFER)], stdout=subprocess.PIPE)
+
+    """
+    # last_action_ts = datetime.now()
     while not parec.stdout.closed:
         # Mono audio with 1 byte per sample makes parsing trivial
-        sample = ord(parec.stdout.read(1)) - 128
+        # sample = ord(parec.stdout.read(1)) - 128
+        sample = ord(parec.communicate(1)) - 128
         print(str( datetime.now()) + ' - Audio sample = ' + str(sample))
         if abs(sample) > app_sample_threshold:
+            # last_action_ts = datetime.now()
             # move the mouth
             print(str( datetime.now()) + ' - Mouth action required')
             mouth.run(Adafruit_MotorHAT.BACKWARD)
             time.sleep(fish_mouth_duration)
-            mouth.run(Adafruit_MotorHAT.RELEASE)
-            # may need to keep it open until the sample is back below the threshold?
-
+            mouth.run(Adafruit_MotorHAT.RELEASE)          
+        # elif ( last_action_ts + timedelta(seconds=2)) < datetime.now():
+            # if there as recorded activity over the threshold for 2 seconds, kill the recording process
+        #    parec.kill
+    """
     # print(str( datetime.now()) + ' - Delaying the motor action by ' + str(fish_mouth_wait) + ' milliseconds')
     # time.sleep(fish_mouth_wait / 1000.0)
     voice.join()
