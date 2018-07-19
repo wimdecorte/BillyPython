@@ -125,6 +125,9 @@ alsa_output.platform-soc_audio.analog-stereo.monitor
 
 -->> may need to change this when plugging in USB audio or using the separate amplifier!
 
+other way to get monitors:
+pacmd list | grep ".monitor"
+
 """
 
 # set the pacat environment
@@ -307,8 +310,10 @@ while True:
     while not parec.stdout.closed:
         # Mono audio with 1 byte per sample makes parsing trivial
         sample = ord(parec.stdout.read(1)) - 128
+        print(str( datetime.now()) + ' - Audio sample = ' + str(sample))
         if abs(sample) > SAMPLE_THRESHOLD:
             # move the mouth
+            print(str( datetime.now()) + ' - Mouth action required')
             mouth.run(Adafruit_MotorHAT.BACKWARD)
             time.sleep(fish_mouth_duration)
             mouth.run(Adafruit_MotorHAT.RELEASE)
