@@ -115,22 +115,7 @@ except Exception:
 """
 This version will use pacat to interpret the audio as it plays, looking for peaks
 Unlike the other approach that uses the visemes and mouth positions
-
-Find PA_SOURCE with `pactl list` and look for a monitor device that corresponds
-to your output device.
-
-My Pi has only one that has monitor in its name:
-Source #0
-alsa_output.platform-soc_audio.analog-stereo.monitor
-
--->> may need to change this when plugging in USB audio or using the separate amplifier!
-
-other way to get monitors:
-pacmd list | grep ".monitor"
-
 """
-
-
 
 # get the app config settings
 app_settings = Config['APP']
@@ -139,9 +124,10 @@ app_testing_mode = app_settings.getboolean('testing')
 app_polling_interval = app_settings.getint('polling_interval')
 app_polling_interval_testing = app_settings.getint('polling_interval_testing')
 app_volume = app_settings.getint('volume')
+app_sample_threshold = app_settings.getint('sample_threshold')
 app_audio_source = app_settings['audio_source']
 print(str( datetime.now()) + ' - App config settings: '  + app_billy + '/' + str(app_testing_mode) + '/' + str(app_polling_interval) + '/' + str(app_polling_interval_testing))
-print(str( datetime.now()) + ' - App audio settings: '  + app_audio_source + '/' + str(app_volume)
+print(str( datetime.now()) + ' - App audio settings: '  + app_audio_source + '/' + str(app_volume) + '/' + str(app_sample_threshold))
 
 
 # get the fish config settings
@@ -166,17 +152,6 @@ PA_FORMAT = "u8" # 8 bits per sample
 PA_CHANNELS = 1 # Mono
 PA_RATE = 2000 # Hz
 PA_BUFFER = 32 # frames for a latency of 64 ms
-SAMPLE_THRESHOLD = 4
-
-"""
-# list of visemes for vowels
-VOWELS = ['@', 'a', 'e', 'E', 'i', 'o', 'O', 'u']
-VOWELS_MID = ['@', 'o', 'e' ]
-VOWELS_OPEN = ['a', 'O', 'E' ]
-VOWELS_CLOSE = ['i', 'u']
-CONSONANTS = []
-# consonants = ['p', 't', 'S', 'f', 'k', 'r']
-"""
 
 # hook into the motor hat and configure the two motors
 mh = Adafruit_MotorHAT(addr=0x60,freq=fish_frequency)
@@ -270,39 +245,16 @@ while True:
     print(str( datetime.now()) +' - Downloading the ' + audio_type + '...')
     dl.start()
 
-    """
-    # while file is downloading, process the visemes
-    # keep only those that move the mouth
-    # start at each word should close the mouth
-    viseme_list = todo.audio_extra_info
-
-
-    # create empty list
-    viseme_data = []
-    for line in viseme_list.splitlines():
-        # print(str( datetime.now()) + ' ' + line)
-        json_line = json.loads(line)
-        # time, type and value
-        when = json_line['time']
-        what = json_line['type']
-        vis = json_line['value']
-
-        if vis in vowels_open:
-            viseme_data.append([vis, when])
-
-    print(str( datetime.now()) + ' - Done parsing the visemes')
-    """
     # make sure we wait for the download to finish
     dl.join()
     print(str( datetime.now()) + ' - Done downloading the ' + audio_type)
 
     # now play the audio and do the magic
     voice = Process(target=play_voice)
-    # th = threading.Thread(target=handle_viseme, args=(viseme_data,))
     print(str( datetime.now()) + ' - Start the mp3 playback')
     voice.start()
 
-    # Capture audio using `pacat` -- PyAudio looked like a cleaner choice but
+    # Capture audio output using `pacat` -- PyAudio looked like a cleaner choice but
     # doesn't support capturing monitor devices, so it can't be used to capture
     # system output.
     print(str( datetime.now()) + ' - Start the pacat recording')
@@ -315,7 +267,7 @@ while True:
         # Mono audio with 1 byte per sample makes parsing trivial
         sample = ord(parec.stdout.read(1)) - 128
         print(str( datetime.now()) + ' - Audio sample = ' + str(sample))
-        if abs(sample) > SAMPLE_THRESHOLD:
+        if abs(sample) > app_sample_threshold:
             # move the mouth
             print(str( datetime.now()) + ' - Mouth action required')
             mouth.run(Adafruit_MotorHAT.BACKWARD)
@@ -325,9 +277,6 @@ while True:
 
     # print(str( datetime.now()) + ' - Delaying the motor action by ' + str(fish_mouth_wait) + ' milliseconds')
     # time.sleep(fish_mouth_wait / 1000.0)
-    # th.start()
-
-    # th.join()
     voice.join()
 
     print(str( datetime.now()) + ' - Done with the audio playback')
