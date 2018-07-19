@@ -62,7 +62,7 @@ def waggle_tail():
 
 def play_voice():
     player = OMXPlayer('play.' + audio_type)
-    player.set_volume(100)
+    player.set_volume(app_volume)
     time.sleep(player.duration() + 1)
 
 def handle_viseme(args):
@@ -130,15 +130,7 @@ pacmd list | grep ".monitor"
 
 """
 
-# set the pacat environment
-PA_SOURCE = "alsa_output.platform-soc_audio.analog-stereo.monitor"
-# We're not playing this stream back anywhere, so to avoid using too much CPU
-# time, use settings that are just high enough to detect when there is speech.
-PA_FORMAT = "u8" # 8 bits per sample
-PA_CHANNELS = 1 # Mono
-PA_RATE = 2000 # Hz
-PA_BUFFER = 32 # frames for a latency of 64 ms
-SAMPLE_THRESHOLD = 4
+
 
 # get the app config settings
 app_settings = Config['APP']
@@ -146,8 +138,10 @@ app_billy = app_settings['use']
 app_testing_mode = app_settings.getboolean('testing')
 app_polling_interval = app_settings.getint('polling_interval')
 app_polling_interval_testing = app_settings.getint('polling_interval_testing')
+app_volume = app_settings.getint('volume')
+app_audio_source = app_settings['audio_source']
 print(str( datetime.now()) + ' - App config settings: '  + app_billy + '/' + str(app_testing_mode) + '/' + str(app_polling_interval) + '/' + str(app_polling_interval_testing))
-
+print(str( datetime.now()) + ' - App audio settings: '  + app_audio_source + '/' + str(app_volume)
 
 
 # get the fish config settings
@@ -163,6 +157,16 @@ fish_move_head = fish.getboolean('move_the_head')
 fish_mouth_wait = fish.getint('offset')
 fish_mouth_duration = fish.getint('mouth_duration') / 1000.0
 print(str( datetime.now()) + ' - Fish config settings: ' + str(fish_frequency) + '/' + str(fish_head_speed) + '/' + str(fish_mouth_speed) + '/' + str(fish_waggle_tail) + '/' + str(fish_move_head))
+
+# set the pacat environment
+PA_SOURCE = app_audio_source
+# We're not playing this stream back anywhere, so to avoid using too much CPU
+# time, use settings that are just high enough to detect when there is speech.
+PA_FORMAT = "u8" # 8 bits per sample
+PA_CHANNELS = 1 # Mono
+PA_RATE = 2000 # Hz
+PA_BUFFER = 32 # frames for a latency of 64 ms
+SAMPLE_THRESHOLD = 4
 
 """
 # list of visemes for vowels
