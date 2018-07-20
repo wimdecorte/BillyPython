@@ -141,6 +141,7 @@ app_polling_interval_testing = app_settings.getint('polling_interval_testing')
 app_volume = app_settings.getint('volume')
 app_sample_threshold = app_settings.getint('sample_threshold')
 app_audio_source = app_settings['audio_source']
+app_audio_amplitude_threshold = app_settings.getint('audio_amplitude_threshold')
 print(str( datetime.now()) + ' - App config settings: '  + app_billy + '/' + str(app_testing_mode) + '/' + str(app_polling_interval) + '/' + str(app_polling_interval_testing))
 print(str( datetime.now()) + ' - App audio settings: '  + app_audio_source + '/' + str(app_volume) + '/' + str(app_sample_threshold))
 
@@ -270,52 +271,39 @@ while True:
     voice.start()
 
     # ==============================================================================
+    # decide on mouth movement by amplitude in the audio file frames
+
     sound = AudioSegment.from_mp3("play.MP3")
-    raw_data = sound.raw_data
+
+    # document the sound, informational purposes only
     # get the frame rate
     sample_rate = sound.frame_rate
     # get amount of bytes contained in one sample
     sample_size = sound.sample_width
     # get channels
     channels = sound.channels
-    print('sample rate = ' + str(sample_rate))
-    print('sample size = ' + str(sample_size))
-    print('channels = ' + str(channels))
-    # So if audio is mono (channel = 1) and sample_size = 2 bytes
-    # you need to take first 2 bytes from raw_data, 
-    # make 2-byte intereger out of it and you get the amplitude of the first frame
-    i = 0
-    for b in raw_data:
-        # take two bytes to process
-        if i % 2 == 1:
-            # start of a new chunk
-            chunk = b''.
-        amplitude = 
+    print(str( datetime.now()) + ' - sample rate = ' + str(sample_rate))
+    print(str( datetime.now()) + ' - sample size (bytes) = ' + str(sample_size))
+    print(str( datetime.now()) + ' - channels = ' + str(channels))
+    print(str( datetime.now()) + ' - length in seconds = ' + str(sound.duration_seconds))
+    
 
-
-    """
-    s = StreamWriter( "play.MP3", 0.5, destination="/home/pi/billy", filename="output.mp3")
-    s.record()
-    sound = AudioSegment.from_mp3("output.MP3")
-    bit_depth = sound.sample_width * 8
-    array_type = get_array_type(bit_depth)
-    numeric_array = array.array(array_type, sound._data)
-    info = mediainfo("output.MP3")
-    print(str(sound.rms))
+    # going to iterate in millisecond chunks
+    chunk_duration = 100
+    chunks = sound[::chunk_duration]
+    for chunk in chunks:
+        # print(str( datetime.now()) + ' - dbfs = ' + str(chunk.dBFS) + ', max dbfs = ' + str(chunk.max_dBFS) + ', max amplitude = ' + str(chunk.max))
+        amplitude = chunk.max
+        if amplitude > app_audio_amplitude_threshold:
+            print(str( datetime.now()) + ' - max amplitude = ' + str(amplitude))
+        time.sleep(chunk_duration / 1000.0)
  
-    print(
-    "\tfile rms:", sound.rms,
-    "\tfile loudness:", sound.dBFS,
-    "\tPeak Amplitude:", sound.max,
-    "\tlength:", len(sound),
-    "\tSample rate:" ,info['sample_rate']
-    )
-    """
     # ==============================================================================
 
     # Capture audio output using `pacat` -- PyAudio looked like a cleaner choice but
     # doesn't support capturing monitor devices, so it can't be used to capture
     # system output.
+    """
     command_args = [
         "pacat",
         "--record",
@@ -335,6 +323,7 @@ while True:
     print(str( datetime.now()) + ' - Start the pacat evaluation')
     # outs, errs = parec.communicate(timeout = (duration_from_fm + 1))
     # outs is a bytes object
+    
     while True:
         out = parec.stdout.read(1)
         print(str( datetime.now()) + ' - raw audio = ' + str(out))
@@ -347,7 +336,7 @@ while True:
     #parec = subprocess.Popen(["/usr/bin/pacat", "--record", "--device="+PA_SOURCE,
     #    "--rate="+str(PA_RATE), "--channels="+str(PA_CHANNELS),
     #    "--format="+PA_FORMAT, "--latency="+str(PA_BUFFER)], stdout=subprocess.PIPE)
-
+    """
     """
     # last_action_ts = datetime.now()
     while not parec.stdout.closed:
