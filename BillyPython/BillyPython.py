@@ -1,23 +1,16 @@
 import atexit
 import configparser
-import json
-import multiprocessing
 import os
-import subprocess
-import threading
 import time
 from datetime import datetime, timedelta
 from multiprocessing import Process
 
 import fmrest
-from Adafruit_MotorHAT import Adafruit_DCMotor, Adafruit_MotorHAT
+from Adafruit_MotorHAT import Adafruit_MotorHAT
 from fmrest.exceptions import FileMakerError
 from omxplayer.player import OMXPlayer
 
-from pydub.playback import play
-from pydub.utils import mediainfo
 from pydub import AudioSegment
-from pydub.silence import split_on_silence
 
 MOTOR_HEAD_TAIL = 1
 MOTOR_MOUTH = 2
