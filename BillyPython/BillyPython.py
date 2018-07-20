@@ -70,26 +70,6 @@ def play_voice():
     player.set_volume(app_volume)
     time.sleep(player.duration() + 1)
 
-    """
-def handle_viseme(args):
-    viseme_data = args
-
-    index = 0
-    # wait until it is time for the first vowel
-    time.sleep(viseme_data[index][1] / 1000.0)
-    while True:
-        viseme_data[index][0]
-        speed = fish_mouth_speed
-        mouth.setSpeed(speed)
-        mouth.run(Adafruit_MotorHAT.BACKWARD)
-        time.sleep(fish_mouth_duration)
-        mouth.run(Adafruit_MotorHAT.RELEASE)
-        index = index + 1
-        if index >= len(viseme_data):
-            break
-        time.sleep((viseme_data[index][1] - viseme_data[index-1][1]) / 1000.0)
-        """
-
 def bytes_to_int(bytes):
     result = 0
 
@@ -127,11 +107,6 @@ except Exception:
     exit()
 
 
-"""
-This version will use pacat to interpret the audio as it plays, looking for peaks
-Unlike the other approach that uses the visemes and mouth positions
-"""
-
 # get the app config settings
 app_settings = Config['APP']
 app_billy = app_settings['use']
@@ -159,15 +134,6 @@ fish_move_head = fish.getboolean('move_the_head')
 fish_mouth_wait = fish.getint('offset')
 fish_mouth_duration = fish.getint('mouth_duration') / 1000.0
 print(str( datetime.now()) + ' - Fish config settings: ' + str(fish_frequency) + '/' + str(fish_head_speed) + '/' + str(fish_mouth_speed) + '/' + str(fish_waggle_tail) + '/' + str(fish_move_head))
-
-# set the pacat environment
-PA_SOURCE = app_audio_source
-# We're not playing this stream back anywhere, so to avoid using too much CPU
-# time, use settings that are just high enough to detect when there is speech.
-PA_FORMAT = "u8" # 8 bits per sample, Polly bitrate is 48 kb/s
-PA_CHANNELS = 1 # Mono, as per the Polly MP3
-PA_RATE = 22050 # Hz, same as the default Polly MP3 sample rate
-PA_BUFFER = 32 # frames for a latency of 64 ms
 
 # hook into the motor hat and configure the two motors
 mh = Adafruit_MotorHAT(addr=0x60,freq=fish_frequency)
@@ -296,6 +262,10 @@ while True:
         amplitude = chunk.max
         if amplitude > app_audio_amplitude_threshold:
             print(str( datetime.now()) + ' - max amplitude = ' + str(amplitude))
+            mouth.run(Adafruit_MotorHAT.BACKWARD)
+            # time.sleep(fish_mouth_duration)
+        else:
+            mouth.run(Adafruit_MotorHAT.RELEASE)   
         time.sleep(chunk_duration / 1000.0)
  
     # ==============================================================================
@@ -304,6 +274,15 @@ while True:
     # doesn't support capturing monitor devices, so it can't be used to capture
     # system output.
     """
+    # set the pacat environment
+    PA_SOURCE = app_audio_source
+    # We're not playing this stream back anywhere, so to avoid using too much CPU
+    # time, use settings that are just high enough to detect when there is speech.
+    PA_FORMAT = "u8" # 8 bits per sample, Polly bitrate is 48 kb/s
+    PA_CHANNELS = 1 # Mono, as per the Polly MP3
+    PA_RATE = 22050 # Hz, same as the default Polly MP3 sample rate
+    PA_BUFFER = 32 # frames for a latency of 64 ms
+
     command_args = [
         "pacat",
         "--record",
