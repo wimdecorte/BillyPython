@@ -61,17 +61,10 @@ def waggle_tail():
 def play_voice():
     print(str( datetime.now()) + ' - Delaying the voice playback by ' + str(fish_mouth_wait) + ' milliseconds')
     time.sleep(fish_mouth_wait / 1000.0)
-    player = OMXPlayer('play.' + audio_type)
+    # player = OMXPlayer('play.' + audio_type)
+    player = OMXPlayer('play.' + audio_type, args=['--adev', 'alsa:hw:1,0'])
     player.set_volume(app_volume)
     time.sleep(player.duration() + 1)
-
-def bytes_to_int(bytes):
-    result = 0
-
-    for b in bytes:
-        result = result * 256 + int(b)
-
-    return result
 
 def get_file():
     print(str( datetime.now()) + ' - sub-process download started.')
@@ -109,11 +102,14 @@ app_testing_mode = app_settings.getboolean('testing')
 app_polling_interval = app_settings.getint('polling_interval')
 app_polling_interval_testing = app_settings.getint('polling_interval_testing')
 app_volume = app_settings.getint('volume')
-app_sample_threshold = app_settings.getint('sample_threshold')
-app_audio_source = app_settings['audio_source']
 app_audio_amplitude_threshold = app_settings.getint('audio_amplitude_threshold')
-print(str( datetime.now()) + ' - App config settings: '  + app_billy + '/' + str(app_testing_mode) + '/' + str(app_polling_interval) + '/' + str(app_polling_interval_testing))
-print(str( datetime.now()) + ' - App audio settings: '  + app_audio_source + '/' + str(app_volume) + '/' + str(app_sample_threshold))
+print(str( datetime.now()) + ' - App config settings: '  + app_billy + '/' + 
+      str(app_testing_mode) + '/' + 
+      str(app_polling_interval) + '/' + 
+      str(app_polling_interval_testing))
+print(str( datetime.now()) + ' - App audio settings: '  + 
+      str(app_volume) + '/' + 
+      str(app_audio_amplitude_threshold))
 
 
 # get the fish config settings
@@ -128,7 +124,12 @@ fish_waggle_tail = fish.getboolean('waggle_the_tail')
 fish_move_head = fish.getboolean('move_the_head')
 fish_mouth_wait = fish.getint('offset')
 fish_mouth_duration = fish.getint('mouth_duration') / 1000.0
-print(str( datetime.now()) + ' - Fish config settings: ' + str(fish_frequency) + '/' + str(fish_head_speed) + '/' + str(fish_mouth_speed) + '/' + str(fish_waggle_tail) + '/' + str(fish_move_head))
+print(str( datetime.now()) + ' - Fish config settings: ' + 
+      str(fish_frequency) + '/' + 
+      str(fish_head_speed) + '/' + 
+      str(fish_mouth_speed) + '/' + 
+      str(fish_waggle_tail) + '/' + 
+      str(fish_move_head))
 
 # hook into the motor hat and configure the two motors
 mh = Adafruit_MotorHAT(addr=0x60,freq=fish_frequency)
@@ -231,9 +232,7 @@ while True:
     print(str( datetime.now()) + ' - Start the mp3 playback')
     voice.start()
 
-    # ==============================================================================
     # decide on mouth movement by amplitude in the audio file frames
-
     sound = AudioSegment.from_mp3("play.MP3")
     
     """
@@ -254,86 +253,17 @@ while True:
     chunk_duration = 200
     chunks = sound[::chunk_duration]
     for chunk in chunks:
-        # print(str( datetime.now()) + ' - dbfs = ' + str(chunk.dBFS) + ', max dbfs = ' + str(chunk.max_dBFS) + ', max amplitude = ' + str(chunk.max))
         amplitude = chunk.max
         if amplitude > app_audio_amplitude_threshold:
             print(str( datetime.now()) + ' - max amplitude = ' + str(amplitude))
             mouth.run(Adafruit_MotorHAT.BACKWARD)
             time.sleep(fish_mouth_duration)
             mouth.run(Adafruit_MotorHAT.RELEASE) 
-            time.sleep((chunk_duration - fish_mouth_duration) / 1000.0)
+            time.sleep((chunk_duration - fish_mouth_duration - 25) / 1000.0)
         else:
             mouth.run(Adafruit_MotorHAT.RELEASE)   
             time.sleep(chunk_duration / 1000.0)
  
-    # ==============================================================================
-
-    # Capture audio output using `pacat` -- PyAudio looked like a cleaner choice but
-    # doesn't support capturing monitor devices, so it can't be used to capture
-    # system output.
-    """
-    # set the pacat environment
-    PA_SOURCE = app_audio_source
-    # We're not playing this stream back anywhere, so to avoid using too much CPU
-    # time, use settings that are just high enough to detect when there is speech.
-    PA_FORMAT = "u8" # 8 bits per sample, Polly bitrate is 48 kb/s
-    PA_CHANNELS = 1 # Mono, as per the Polly MP3
-    PA_RATE = 22050 # Hz, same as the default Polly MP3 sample rate
-    PA_BUFFER = 32 # frames for a latency of 64 ms
-
-    command_args = [
-        "pacat",
-        "--record",
-        "--device=" + PA_SOURCE,
-        "--rate=" + str(PA_RATE),
-        "--channels=" + str(PA_CHANNELS),
-        "--format=" + PA_FORMAT,
-        "--latency=" + str(PA_BUFFER)
-        ]
-    print(str( datetime.now()) + ' - Start the pacat recording')
-    parec = subprocess.Popen(
-        args = command_args,
-        shell = False,
-        stdout = subprocess.PIPE
-        )
-
-    print(str( datetime.now()) + ' - Start the pacat evaluation')
-    # outs, errs = parec.communicate(timeout = (duration_from_fm + 1))
-    # outs is a bytes object
-    
-    while True:
-        out = parec.stdout.read(1)
-        print(str( datetime.now()) + ' - raw audio = ' + str(out))
-        if out == b'' and parec.poll() is not None:
-            break
-        sample = ord(out) - 128
-        print(str( datetime.now()) + ' - Audio sample = ' + str(sample))
-    parec.kill()
-
-    #parec = subprocess.Popen(["/usr/bin/pacat", "--record", "--device="+PA_SOURCE,
-    #    "--rate="+str(PA_RATE), "--channels="+str(PA_CHANNELS),
-    #    "--format="+PA_FORMAT, "--latency="+str(PA_BUFFER)], stdout=subprocess.PIPE)
-    """
-    """
-    # last_action_ts = datetime.now()
-    while not parec.stdout.closed:
-        # Mono audio with 1 byte per sample makes parsing trivial
-        # sample = ord(parec.stdout.read(1)) - 128
-        sample = ord(parec.communicate(1)) - 128
-        print(str( datetime.now()) + ' - Audio sample = ' + str(sample))
-        if abs(sample) > app_sample_threshold:
-            # last_action_ts = datetime.now()
-            # move the mouth
-            print(str( datetime.now()) + ' - Mouth action required')
-            mouth.run(Adafruit_MotorHAT.BACKWARD)
-            time.sleep(fish_mouth_duration)
-            mouth.run(Adafruit_MotorHAT.RELEASE)          
-        # elif ( last_action_ts + timedelta(seconds=2)) < datetime.now():
-            # if there as recorded activity over the threshold for 2 seconds, kill the recording process
-        #    parec.kill
-    """
-    # print(str( datetime.now()) + ' - Delaying the motor action by ' + str(fish_mouth_wait) + ' milliseconds')
-    # time.sleep(fish_mouth_wait / 1000.0)
     voice.join()
 
     print(str( datetime.now()) + ' - Done with the audio playback')
