@@ -14,6 +14,11 @@ from Adafruit_MotorHAT import Adafruit_DCMotor, Adafruit_MotorHAT
 from fmrest.exceptions import FileMakerError
 from omxplayer.player import OMXPlayer
 
+from pydub.playback import play
+from pydub.utils import mediainfo
+from pydub import AudioSegment
+from pydub.silence import split_on_silence
+
 MOTOR_HEAD_TAIL = 1
 MOTOR_MOUTH = 2
 
@@ -65,6 +70,7 @@ def play_voice():
     player.set_volume(app_volume)
     time.sleep(player.duration() + 1)
 
+    """
 def handle_viseme(args):
     viseme_data = args
 
@@ -82,6 +88,15 @@ def handle_viseme(args):
         if index >= len(viseme_data):
             break
         time.sleep((viseme_data[index][1] - viseme_data[index-1][1]) / 1000.0)
+        """
+
+def bytes_to_int(bytes):
+    result = 0
+
+    for b in bytes:
+        result = result * 256 + int(b)
+
+    return result
 
 def get_file():
     print(str( datetime.now()) + ' - sub-process download started.')
@@ -253,6 +268,50 @@ while True:
     voice = Process(target=play_voice)
     print(str( datetime.now()) + ' - Start the mp3 playback')
     voice.start()
+
+    # ==============================================================================
+    sound = AudioSegment.from_mp3("play.MP3")
+    raw_data = sound.raw_data
+    # get the frame rate
+    sample_rate = sound.frame_rate
+    # get amount of bytes contained in one sample
+    sample_size = sound.sample_width
+    # get channels
+    channels = sound.channels
+    print('sample rate = ' + str(sample_rate))
+    print('sample size = ' + str(sample_size))
+    print('channels = ' + str(channels))
+    # So if audio is mono (channel = 1) and sample_size = 2 bytes
+    # you need to take first 2 bytes from raw_data, 
+    # make 2-byte intereger out of it and you get the amplitude of the first frame
+    i = 0
+    for b in raw_data:
+        # take two bytes to process
+        if i % 2 == 1:
+            # start of a new chunk
+            chunk = b''.
+        amplitude = 
+
+
+    """
+    s = StreamWriter( "play.MP3", 0.5, destination="/home/pi/billy", filename="output.mp3")
+    s.record()
+    sound = AudioSegment.from_mp3("output.MP3")
+    bit_depth = sound.sample_width * 8
+    array_type = get_array_type(bit_depth)
+    numeric_array = array.array(array_type, sound._data)
+    info = mediainfo("output.MP3")
+    print(str(sound.rms))
+ 
+    print(
+    "\tfile rms:", sound.rms,
+    "\tfile loudness:", sound.dBFS,
+    "\tPeak Amplitude:", sound.max,
+    "\tlength:", len(sound),
+    "\tSample rate:" ,info['sample_rate']
+    )
+    """
+    # ==============================================================================
 
     # Capture audio output using `pacat` -- PyAudio looked like a cleaner choice but
     # doesn't support capturing monitor devices, so it can't be used to capture
