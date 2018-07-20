@@ -59,6 +59,8 @@ def waggle_tail():
         time.sleep(0.20)
 
 def play_voice():
+    print(str( datetime.now()) + ' - Delaying the voice playback by ' + str(fish_mouth_wait) + ' milliseconds')
+    time.sleep(fish_mouth_wait / 1000.0)
     player = OMXPlayer('play.' + audio_type)
     player.set_volume(app_volume)
     time.sleep(player.duration() + 1)
@@ -233,7 +235,8 @@ while True:
     # decide on mouth movement by amplitude in the audio file frames
 
     sound = AudioSegment.from_mp3("play.MP3")
-
+    
+    """
     # document the sound, informational purposes only
     # get the frame rate
     sample_rate = sound.frame_rate
@@ -245,10 +248,10 @@ while True:
     print(str( datetime.now()) + ' - sample size (bytes) = ' + str(sample_size))
     print(str( datetime.now()) + ' - channels = ' + str(channels))
     print(str( datetime.now()) + ' - length in seconds = ' + str(sound.duration_seconds))
-    
+    """
 
     # going to iterate in millisecond chunks
-    chunk_duration = 100
+    chunk_duration = 200
     chunks = sound[::chunk_duration]
     for chunk in chunks:
         # print(str( datetime.now()) + ' - dbfs = ' + str(chunk.dBFS) + ', max dbfs = ' + str(chunk.max_dBFS) + ', max amplitude = ' + str(chunk.max))
@@ -256,10 +259,12 @@ while True:
         if amplitude > app_audio_amplitude_threshold:
             print(str( datetime.now()) + ' - max amplitude = ' + str(amplitude))
             mouth.run(Adafruit_MotorHAT.BACKWARD)
-            # time.sleep(fish_mouth_duration)
+            time.sleep(fish_mouth_duration)
+            mouth.run(Adafruit_MotorHAT.RELEASE) 
+            time.sleep((chunk_duration - fish_mouth_duration) / 1000.0)
         else:
             mouth.run(Adafruit_MotorHAT.RELEASE)   
-        time.sleep(chunk_duration / 1000.0)
+            time.sleep(chunk_duration / 1000.0)
  
     # ==============================================================================
 
