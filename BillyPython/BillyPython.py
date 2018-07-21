@@ -59,22 +59,17 @@ def waggle_tail():
         time.sleep(0.20)
 
 def play_voice():
-    player = OMXPlayer('play.' + audio_type)
-    player.set_volume(app_volume)
+    if app_audio_USB == True:
+        player = OMXPlayer('play.' + audio_type, args=['--adev', 'alsa:plughw:1,0'])
+    else:
+        player = OMXPlayer('play.' + audio_type)
+    # player.set_volume(app_volume)
     time.sleep(player.duration() + 1)
-
-def bytes_to_int(bytes):
-    result = 0
-
-    for b in bytes:
-        result = result * 256 + int(b)
-
-    return result
 
 def get_file():
     print(str( datetime.now()) + ' - sub-process download started.')
     name, type_, length, response = fms.fetch_file(todo.audio_file)
-    print(str( datetime.now()) +' - fetched audio file details. name = ' + name + ', type = ' + str(type_) + ', length = ' + str(length) )
+    print(str( datetime.now()) +' - fetched audio file details. Type = ' + str(type_) + ', length = ' + str(length) )
     with open('play.' + audio_type, 'wb') as file_:
         file_.write(response.content)
     print(str( datetime.now()) + ' - sub-process download done.')
@@ -109,9 +104,17 @@ app_polling_interval_testing = app_settings.getint('polling_interval_testing')
 app_volume = app_settings.getint('volume')
 app_sample_threshold = app_settings.getint('sample_threshold')
 app_audio_source = app_settings['audio_source']
+app_audio_source_USB = app_settings['audio_source_USB']
+app_audio_USB = app_settings.getboolean('audio_use_USB')
 app_audio_amplitude_threshold = app_settings.getint('audio_amplitude_threshold')
-print(str( datetime.now()) + ' - App config settings: '  + app_billy + '/' + str(app_testing_mode) + '/' + str(app_polling_interval) + '/' + str(app_polling_interval_testing))
-print(str( datetime.now()) + ' - App audio settings: '  + app_audio_source + '/' + str(app_volume) + '/' + str(app_sample_threshold))
+# show the config settings
+print(str( datetime.now()) + ' - App config settings: '  + app_billy + '/' 
+      + str(app_testing_mode) + '/' 
+      + str(app_polling_interval) + '/' 
+      + str(app_polling_interval_testing))
+print(str( datetime.now()) + ' - App audio settings: '  + app_audio_source + '/' 
+      + str(app_volume) + '/' 
+      + str(app_sample_threshold))
 
 
 # get the fish config settings
@@ -126,7 +129,12 @@ fish_waggle_tail = fish.getboolean('waggle_the_tail')
 fish_move_head = fish.getboolean('move_the_head')
 fish_mouth_wait = fish.getint('offset')
 fish_mouth_duration = fish.getint('mouth_duration') / 1000.0
-print(str( datetime.now()) + ' - Fish config settings: ' + str(fish_frequency) + '/' + str(fish_head_speed) + '/' + str(fish_mouth_speed) + '/' + str(fish_waggle_tail) + '/' + str(fish_move_head))
+# show the settings
+print(str( datetime.now()) + ' - Fish config settings: ' + str(fish_frequency) + '/' 
+      + str(fish_head_speed) + '/' 
+      + str(fish_mouth_speed) + '/' 
+      + str(fish_waggle_tail) + '/' 
+      + str(fish_move_head))
 
 # hook into the motor hat and configure the two motors
 mh = Adafruit_MotorHAT(addr=0x60,freq=fish_frequency)
@@ -202,6 +210,8 @@ while True:
 
     # prep the download process for the mp3
     dl = Process(target=get_file)
+    print(str( datetime.now()) +' - Downloading the ' + audio_type + '...')
+    dl.start()
 
     # turn billy's head here
     hhmmss =  todo.duration
@@ -212,13 +222,10 @@ while True:
         x = timedelta(hours=hours, minutes=minutes, seconds=seconds)
         duration_from_fm = x.seconds
     print(str( datetime.now()) +' - ' + audio_type + ' duration from FM = ' + str(duration_from_fm) + ' seconds')
-
+   
     head_process = Process(target=head_tilt, args=(duration_from_fm,))
     print(str( datetime.now()) +' - Turning the head...')
     head_process.start()
-
-    print(str( datetime.now()) +' - Downloading the ' + audio_type + '...')
-    dl.start()
 
     # make sure we wait for the download to finish
     dl.join()
@@ -229,44 +236,9 @@ while True:
     print(str( datetime.now()) + ' - Start the mp3 playback')
     voice.start()
 
-    # ==============================================================================
-    # decide on mouth movement by amplitude in the audio file frames
-
-    sound = AudioSegment.from_mp3("play.MP3")
-
-    # document the sound, informational purposes only
-    # get the frame rate
-    sample_rate = sound.frame_rate
-    # get amount of bytes contained in one sample
-    sample_size = sound.sample_width
-    # get channels
-    channels = sound.channels
-    print(str( datetime.now()) + ' - sample rate = ' + str(sample_rate))
-    print(str( datetime.now()) + ' - sample size (bytes) = ' + str(sample_size))
-    print(str( datetime.now()) + ' - channels = ' + str(channels))
-    print(str( datetime.now()) + ' - length in seconds = ' + str(sound.duration_seconds))
-    
-
-    # going to iterate in millisecond chunks
-    chunk_duration = 100
-    chunks = sound[::chunk_duration]
-    for chunk in chunks:
-        # print(str( datetime.now()) + ' - dbfs = ' + str(chunk.dBFS) + ', max dbfs = ' + str(chunk.max_dBFS) + ', max amplitude = ' + str(chunk.max))
-        amplitude = chunk.max
-        if amplitude > app_audio_amplitude_threshold:
-            print(str( datetime.now()) + ' - max amplitude = ' + str(amplitude))
-            mouth.run(Adafruit_MotorHAT.BACKWARD)
-            # time.sleep(fish_mouth_duration)
-        else:
-            mouth.run(Adafruit_MotorHAT.RELEASE)   
-        time.sleep(chunk_duration / 1000.0)
- 
-    # ==============================================================================
-
     # Capture audio output using `pacat` -- PyAudio looked like a cleaner choice but
     # doesn't support capturing monitor devices, so it can't be used to capture
     # system output.
-    """
     # set the pacat environment
     PA_SOURCE = app_audio_source
     # We're not playing this stream back anywhere, so to avoid using too much CPU
@@ -308,8 +280,8 @@ while True:
     #parec = subprocess.Popen(["/usr/bin/pacat", "--record", "--device="+PA_SOURCE,
     #    "--rate="+str(PA_RATE), "--channels="+str(PA_CHANNELS),
     #    "--format="+PA_FORMAT, "--latency="+str(PA_BUFFER)], stdout=subprocess.PIPE)
-    """
-    """
+
+
     # last_action_ts = datetime.now()
     while not parec.stdout.closed:
         # Mono audio with 1 byte per sample makes parsing trivial
@@ -326,7 +298,7 @@ while True:
         # elif ( last_action_ts + timedelta(seconds=2)) < datetime.now():
             # if there as recorded activity over the threshold for 2 seconds, kill the recording process
         #    parec.kill
-    """
+
     # print(str( datetime.now()) + ' - Delaying the motor action by ' + str(fish_mouth_wait) + ' milliseconds')
     # time.sleep(fish_mouth_wait / 1000.0)
     voice.join()
