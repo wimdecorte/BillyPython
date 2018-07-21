@@ -61,8 +61,10 @@ def waggle_tail():
 def play_voice():
     print(str( datetime.now()) + ' - Delaying the voice playback by ' + str(fish_mouth_wait) + ' milliseconds')
     time.sleep(fish_mouth_wait / 1000.0)
-    # player = OMXPlayer('play.' + audio_type)
-    player = OMXPlayer('play.' + audio_type, args=['--adev', 'alsa:plughw:1,0'])
+    if app_audio_USB == True:
+        player = OMXPlayer('play.' + audio_type, args=['--adev', 'alsa:plughw:1,0'])
+    else:
+        player = OMXPlayer('play.' + audio_type)  
     player.set_volume(app_volume)
     time.sleep(player.duration() + 1)
 
@@ -103,6 +105,7 @@ app_polling_interval = app_settings.getint('polling_interval')
 app_polling_interval_testing = app_settings.getint('polling_interval_testing')
 app_volume = app_settings.getint('volume')
 app_audio_amplitude_threshold = app_settings.getint('audio_amplitude_threshold')
+app_audio_USB = app_settings.getboolean('audio_use_USB')
 # output the settings for inspection
 print(str( datetime.now()) + ' - App config settings: '  + app_billy + '/' + 
       str(app_testing_mode) + '/' + 
@@ -258,12 +261,12 @@ while True:
         amplitude = chunk.max
         if amplitude > app_audio_amplitude_threshold:
             # open and close the mouth if the sound is over our amplitude threshold
-            print(str( datetime.now()) + ' - max amplitude = ' + str(amplitude))
+            # print(str( datetime.now()) + ' - max amplitude = ' + str(amplitude))
             mouth.run(Adafruit_MotorHAT.BACKWARD)
             time.sleep(fish_mouth_duration)
             mouth.run(Adafruit_MotorHAT.RELEASE)
-            print(str( datetime.now()) + ' - mouth code done' )
-            time_allow_for_spent = 25
+            # print(str( datetime.now()) + ' - mouth code done' )
+            time_allow_for_spent = 15 # based on checking the difference in the timestamps
             time.sleep((chunk_duration - fish_mouth_duration - time_allow_for_spent) / 1000.0)
         else:
             mouth.run(Adafruit_MotorHAT.RELEASE)   
