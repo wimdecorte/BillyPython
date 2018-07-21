@@ -65,7 +65,7 @@ def play_voice():
         player = OMXPlayer('play.' + audio_type, args=['--adev', 'alsa:plughw:1,0'])
     else:
         player = OMXPlayer('play.' + audio_type)  
-    player.set_volume(app_volume)
+    # player.set_volume(app_volume)
     time.sleep(player.duration() + 1)
 
 def get_file():
