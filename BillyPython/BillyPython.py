@@ -62,7 +62,7 @@ def play_voice():
     print(str( datetime.now()) + ' - Delaying the voice playback by ' + str(fish_mouth_wait) + ' milliseconds')
     time.sleep(fish_mouth_wait / 1000.0)
     # player = OMXPlayer('play.' + audio_type)
-    player = OMXPlayer('play.' + audio_type, args=['--adev', 'alsa:hw:1,0'])
+    player = OMXPlayer('play.' + audio_type, args=['--adev', 'alsa:plughw:1,0'])
     player.set_volume(app_volume)
     time.sleep(player.duration() + 1)
 
