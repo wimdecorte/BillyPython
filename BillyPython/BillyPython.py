@@ -103,6 +103,7 @@ app_polling_interval = app_settings.getint('polling_interval')
 app_polling_interval_testing = app_settings.getint('polling_interval_testing')
 app_volume = app_settings.getint('volume')
 app_audio_amplitude_threshold = app_settings.getint('audio_amplitude_threshold')
+# output the settings for inspection
 print(str( datetime.now()) + ' - App config settings: '  + app_billy + '/' + 
       str(app_testing_mode) + '/' + 
       str(app_polling_interval) + '/' + 
@@ -124,6 +125,7 @@ fish_waggle_tail = fish.getboolean('waggle_the_tail')
 fish_move_head = fish.getboolean('move_the_head')
 fish_mouth_wait = fish.getint('offset')
 fish_mouth_duration = fish.getint('mouth_duration') / 1000.0
+# output the settings for inspection
 print(str( datetime.now()) + ' - Fish config settings: ' + 
       str(fish_frequency) + '/' + 
       str(fish_head_speed) + '/' + 
@@ -249,17 +251,20 @@ while True:
     print(str( datetime.now()) + ' - length in seconds = ' + str(sound.duration_seconds))
     """
 
-    # going to iterate in millisecond chunks
+    # going to iterate over the mp3 file in millisecond chunks
     chunk_duration = 200
     chunks = sound[::chunk_duration]
     for chunk in chunks:
         amplitude = chunk.max
         if amplitude > app_audio_amplitude_threshold:
+            # open and close the mouth if the sound is over our amplitude threshold
             print(str( datetime.now()) + ' - max amplitude = ' + str(amplitude))
             mouth.run(Adafruit_MotorHAT.BACKWARD)
             time.sleep(fish_mouth_duration)
-            mouth.run(Adafruit_MotorHAT.RELEASE) 
-            time.sleep((chunk_duration - fish_mouth_duration - 25) / 1000.0)
+            mouth.run(Adafruit_MotorHAT.RELEASE)
+            print(str( datetime.now()) + ' - mouth code done' )
+            time_allow_for_spent = 25
+            time.sleep((chunk_duration - fish_mouth_duration - time_allow_for_spent) / 1000.0)
         else:
             mouth.run(Adafruit_MotorHAT.RELEASE)   
             time.sleep(chunk_duration / 1000.0)
