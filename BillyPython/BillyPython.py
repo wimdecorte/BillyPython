@@ -4,13 +4,13 @@ import os
 import time
 from datetime import datetime, timedelta
 from multiprocessing import Process
+import subprocess
 
 import fmrest
 from Adafruit_MotorHAT import Adafruit_MotorHAT
 from fmrest.exceptions import FileMakerError
 from omxplayer.player import OMXPlayer
 
-from pydub import AudioSegment
 
 MOTOR_HEAD_TAIL = 1
 MOTOR_MOUTH = 2
@@ -240,10 +240,13 @@ while True:
     # doesn't support capturing monitor devices, so it can't be used to capture
     # system output.
     # set the pacat environment
-    PA_SOURCE = app_audio_source
+    if app_audio_USB == True:
+        PA_SOURCE = app_audio_source_USB
+    else:
+        PA_SOURCE = app_audio_source
     # We're not playing this stream back anywhere, so to avoid using too much CPU
     # time, use settings that are just high enough to detect when there is speech.
-    PA_FORMAT = "u8" # 8 bits per sample, Polly bitrate is 48 kb/s
+    PA_FORMAT = 'u8'  #'s16le' "u8" # 8 bits per sample, Polly bitrate is 48 kb/s
     PA_CHANNELS = 1 # Mono, as per the Polly MP3
     PA_RATE = 22050 # Hz, same as the default Polly MP3 sample rate
     PA_BUFFER = 32 # frames for a latency of 64 ms
