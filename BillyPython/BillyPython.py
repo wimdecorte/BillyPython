@@ -280,7 +280,7 @@ while True:
         print(str( datetime.now()) + ' - Audio sample = ' + str(sample))
     parec.kill()
 
-    #parec = subprocess.Popen(["/usr/bin/pacat", "--record", "--device="+PA_SOURCE,
+    # parec = subprocess.Popen(["/usr/bin/pacat", "--record", "--device="+PA_SOURCE,
     #    "--rate="+str(PA_RATE), "--channels="+str(PA_CHANNELS),
     #    "--format="+PA_FORMAT, "--latency="+str(PA_BUFFER)], stdout=subprocess.PIPE)
 
