@@ -112,8 +112,8 @@ print(str( datetime.now()) + ' - App config settings: '  + app_billy + '/' +
       str(app_polling_interval) + '/' + 
       str(app_polling_interval_testing))
 print(str( datetime.now()) + ' - App audio settings: '  + 
-      str(app_volume) + '/' + 
-      str(app_audio_amplitude_threshold))
+      str('amplitude threshold = ' + app_audio_amplitude_threshold) + '/' + 
+      str('use usb audio = ' + str(app_audio_USB)))
 
 
 # get the fish config settings
