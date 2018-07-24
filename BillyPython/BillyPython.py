@@ -42,7 +42,7 @@ def head_tilt(how_many_seconds):
         head.setSpeed(fish_head_speed)
         head.run(Adafruit_MotorHAT.BACKWARD)
         # set to forward to move the tail
-        time.sleep(int(how_many_seconds))
+        time.sleep(int(how_many_seconds + 1))
         head.run(Adafruit_MotorHAT.RELEASE)
         if fish_waggle_tail == True:
             waggle_tail()
