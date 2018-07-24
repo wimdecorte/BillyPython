@@ -62,8 +62,13 @@ def play_voice():
     print(str( datetime.now()) + ' - Delaying the voice playback by ' + str(fish_mouth_wait) + ' milliseconds')
     time.sleep(fish_mouth_wait / 1000.0)
     if app_audio_USB == True:
+        print(str( datetime.now()) + ' - playing audio through USB')
         player = OMXPlayer('play.' + audio_type, args=['--adev', 'alsa:plughw:1,0'])
+        # to test in terminal: 
+        # omxplayer --adev alsa:plughw:1,0 play.MP3
+        # 1,0 = card 1, device 0 --> see aplay -l (lowercase L)
     else:
+        print(str( datetime.now()) + ' - playing audio through jack')
         player = OMXPlayer('play.' + audio_type)  
     # player.set_volume(app_volume)
     time.sleep(player.duration() + 1)
