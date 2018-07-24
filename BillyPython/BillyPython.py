@@ -227,8 +227,6 @@ while True:
     print(str( datetime.now()) +' - ' + audio_type + ' duration from FM = ' + str(duration_from_fm) + ' seconds')
 
     head_process = Process(target=head_tilt, args=(duration_from_fm,))
-    print(str( datetime.now()) +' - Turning the head...')
-    head_process.start()
 
     print(str( datetime.now()) +' - Downloading the ' + audio_type + '...')
     dl.start()
@@ -236,6 +234,10 @@ while True:
     # make sure we wait for the download to finish
     dl.join()
     print(str( datetime.now()) + ' - Done downloading the ' + audio_type)
+
+    # turn the head
+    print(str( datetime.now()) +' - Turning the head...')
+    head_process.start()
 
     # now play the audio and do the magic
     voice = Process(target=play_voice)
