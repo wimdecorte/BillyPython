@@ -5,6 +5,8 @@ This is a project from the FileMaker Devcon 2018 (Dallas, TX).
 It demonstrates how to read data from FileMaker through the Data API.  Runs on Raspberry Pi with Raspbian, and drives a Billy Bass singing fish.
 
 Uses: https://github.com/davidhamann/python-fmrest as the wrapper around the FMS Data API.
+Uses a Raspberry Pi 3 (not 3+, but should work the same).
+Uses an AdaFruit motor hat 2348
 
 There are 3 branches to this project:
 - Master: uses the visemes as returned from AWS Polly to determine when the mouth should move
