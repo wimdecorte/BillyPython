@@ -16,3 +16,7 @@ The project is packaged a a Visual Studio 2017 project but you do not need to us
 The good stuff is in the "BillyPython" subfolder.
 Change the .ini file to point to your server and your file.
 Also change the ini file with values that work best for your Billy Bass.  You can use the two test pything scripts to target just the mouth and just the head/body to find out what combination of frequency, speed and duration works best.
+
+To run, use
+"python3 BillyPython.py"
+The script will loop every 500 milliseconds (or depending on what value you set in the ini file) and query your FileMaker Server.
