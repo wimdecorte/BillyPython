@@ -23,3 +23,6 @@ Also change the ini file with values that work best for your Billy Bass.  You ca
 To run, use
 "python3 BillyPython.py"
 The script will loop every 500 milliseconds (or depending on what value you set in the ini file) and query your FileMaker Server.
+
+The full story of how the session was put together, including hacking the Billy Bass:
+https://www.soliantconsulting.com/blog/filemaker-devcon-2018-billy-bass-1/
